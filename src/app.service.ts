@@ -1,29 +1,36 @@
 import { Injectable } from "@nestjs/common";
+import { ResponceAnswer } from "./types/responce.type";
 
 @Injectable()
 export class AppService {
 
-  async search(question: string): Promise<string[] | string>  {
-    const response = [];
+  async search(question: string, page: number): Promise<ResponceAnswer[] | string[]> {
+    const response: ResponceAnswer[] = [];
 
-    let answer = await this.fetchSearch(true, question);
+    let answers = await this.fetchSearch(true, question, page);
 
-    if (answer.items.length === 0) {
-      answer = await this.fetchSearch(false, question);
+    if (answers.length === 0) {
+      answers = await this.fetchSearch(false, question, page);
     }
 
-    if (answer.items.length === 0) return "doesnt have answer !";
+    if (answers.length === 0) return ["doesnt have answer !"];
 
-    for (let i = 0; i < answer.items.length; i++) {
-      response.push(answer.items[i].link);
-    }
-
+    answers.forEach(answer => {
+      response.push({
+        title: answer.title,
+        link: answer.link,
+      });
+    });
     return response;
   }
 
-  private fetchSearch = async (accepted: boolean, query: string) => {
-    return await fetch(`https://api.stackexchange.com/2.3/search/advanced?pagesize=5&order=asc&sort=relevance&q=${query}&accepted=${accepted}&site=stackoverflow`)
-      .then(res => res.json())
-      .catch(err => console.log(err));
+  private fetchSearch = async (accepted: boolean, query: string, page: number) => {
+    try {
+      return fetch(`https://api.stackexchange.com/2.3/search/advanced?page=${page}&pagesize=3&order=asc&sort=relevance&q=${query}&accepted=${accepted}&site=stackoverflow`)
+        .then(res => res.json())
+        .then(data => data.items);
+    } catch (e) {
+      console.log(e);
+    }
   };
 }
