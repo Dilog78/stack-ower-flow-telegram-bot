@@ -1,6 +1,8 @@
-import { Ctx, On, InjectBot, Start, Update, Message, Hears } from "nestjs-telegraf";
-import { Context, Markup, Telegraf } from "telegraf";
+import { Ctx, On, InjectBot, Start, Update, Message } from "nestjs-telegraf";
+import { Context, Telegraf } from "telegraf";
 import { AppService } from "./app.service";
+import nextPage from "./buttons/pagination.button";
+import ButtonsWithMsg from "./buttons/message.buttons";
 
 
 @Update()
@@ -24,35 +26,34 @@ export class AppUpdate {
   async question(@Message("text") msg: string, @Ctx() ctx: Context) {
     this.message = msg;
     this.page = 1;
+
     const answers = await this.appService.search(msg, this.page);
-    answers.forEach(answer => {
-      ctx.reply(answer.title, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "go to StackOwerflow", url: answer.link }]
-          ]
-        }
-      });
-    });
-    await ctx.reply('next', Markup.keyboard([['more']]));
+
+    for (const answer of answers) {
+      await ctx.reply(answer["title"] as string, ButtonsWithMsg(answer.link as string));
+    }
+
+    await ctx.reply("more questions", nextPage());
   }
 
-  @Hears('next')
-  async more(@Ctx() ctx: Context) {
-    console.log(this.page);
-    this.page = this.page + 1;
-    console.log(this.page);
+  @On("callback_query")
+  async nextPage(@Ctx() ctx: Context) {
+    const cbData: string = await ctx.callbackQuery["data"];
 
-    const answers = await this.appService.search(this.message, this.page);
+    if (cbData === "pagination") {
+      this.page = this.page + 1;
 
-    answers.forEach(answer => {
-      ctx.reply(answer.title, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "go to StackOwerflow", url: answer.link }, { text: "more", callback_data: 'more' }]
-          ]
-        }
-      });
-    });
+      const answers = await this.appService.search(this.message, this.page);
+
+      for (const answer of answers) {
+        await ctx.reply(answer["title"] as string, ButtonsWithMsg(answer.link as string));
+      }
+
+      await ctx.reply("more questions", nextPage());
+    }
+
+    if (cbData === "get answer") {
+      await ctx.reply("Answer");
+    }
   }
 }
