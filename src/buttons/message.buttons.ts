@@ -1,8 +1,8 @@
-const ButtonsWithMsg = (url: string) => {
+const ButtonsWithMsg = (url: string, id: string) => {
   return {
     reply_markup: {
       inline_keyboard: [
-        [{text: 'see answers', callback_data: "get answer"}, { text: "go to StackOwerflow", url }],
+        [{text: 'see answers', callback_data: id}, { text: "go to StackOverflow", url }],
       ]
     }
   }

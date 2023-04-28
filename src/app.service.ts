@@ -1,36 +1,30 @@
 import { Injectable } from "@nestjs/common";
 import { ResponceAnswer } from "./types/responce.type";
+import { ApiStackOverflow } from "./api/api.stackoverflow";
 
 @Injectable()
 export class AppService {
+  constructor(private readonly apiStackOverFlow: ApiStackOverflow) {
+  }
 
   async search(question: string, page: number): Promise<ResponceAnswer[] | string[]> {
     const response: ResponceAnswer[] = [];
 
-    let answers: [] = await this.fetchSearch(true, question, page);
+    let answers: [] = await this.apiStackOverFlow.fetchSearch(true, question, page);
 
     if (answers.length === 0) {
-      answers = await this.fetchSearch(false, question, page);
+      answers = await this.apiStackOverFlow.fetchSearch(false, question, page);
     }
 
     if (answers.length === 0) return ["doesnt have answer !"];
 
-    answers.forEach(({title, link}) => {
+    answers.forEach(({ title, link, question_id }) => {
       response.push({
         title,
-        link
+        link,
+        question_id
       });
     });
     return response;
   }
-
-  fetchSearch (accepted: boolean, query: string, page: number): Promise<[]> {
-    try {
-      return fetch(`https://api.stackexchange.com/2.3/search/advanced?page=${page}&pagesize=3&order=asc&sort=relevance&q=${query}&accepted=${accepted}&site=stackoverflow`)
-        .then(res => res.json())
-        .then(data => data.items);
-    } catch (e) {
-      console.log(e);
-    }
-  };
 }

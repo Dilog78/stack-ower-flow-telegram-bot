@@ -3,6 +3,7 @@ import { Context, Telegraf } from "telegraf";
 import { AppService } from "./app.service";
 import nextPage from "./buttons/pagination.button";
 import ButtonsWithMsg from "./buttons/message.buttons";
+import { ApiStackOverflow } from "./api/api.stackoverflow";
 
 
 @Update()
@@ -13,7 +14,8 @@ export class AppUpdate {
 
   constructor(
     @InjectBot() private readonly bot: Telegraf<Context>,
-    private readonly appService: AppService
+    private readonly appService: AppService,
+    private readonly apiStackOverFlow: ApiStackOverflow
   ) {
   }
 
@@ -27,10 +29,10 @@ export class AppUpdate {
     this.message = msg;
     this.page = 1;
 
-    const answers = await this.appService.search(msg, this.page);
+    const questions = await this.appService.search(msg, this.page);
 
-    for (const answer of answers) {
-      await ctx.reply(answer["title"] as string, ButtonsWithMsg(answer.link as string));
+    for (const question of questions) {
+      await ctx.reply(question["title"] as string, ButtonsWithMsg(question.link as string, question["question_id"]));
     }
 
     await ctx.reply("more questions", nextPage());
@@ -43,17 +45,19 @@ export class AppUpdate {
     if (cbData === "pagination") {
       this.page = this.page + 1;
 
-      const answers = await this.appService.search(this.message, this.page);
+      const questions = await this.appService.search(this.message, this.page);
 
-      for (const answer of answers) {
-        await ctx.reply(answer["title"] as string, ButtonsWithMsg(answer.link as string));
+      for (const question of questions) {
+        await ctx.reply(question["title"] as string, ButtonsWithMsg(question.link as string, question["question_id"]));
       }
 
       await ctx.reply("more questions", nextPage());
+      return;
     }
 
-    if (cbData === "get answer") {
-      await ctx.reply("Answer");
+    const answers = await this.apiStackOverFlow.getAnswers(+cbData);
+    for (const answer of answers) {
+      await ctx.reply(answer['body_markdown'])
     }
   }
 }
