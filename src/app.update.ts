@@ -30,12 +30,18 @@ export class AppUpdate {
     this.page = 1;
 
     const questions = await this.appService.search(msg, this.page);
+    
+    if (typeof questions[0] != 'object') {
+      ctx.reply(questions[0]);
+      return;
+    }
 
     for (const question of questions) {
       await ctx.reply(question["title"] as string, ButtonsWithMsg(question.link as string, question["question_id"]));
     }
 
     await ctx.reply("more questions", nextPage());
+    return
   }
 
   @On("callback_query")
@@ -47,17 +53,23 @@ export class AppUpdate {
 
       const questions = await this.appService.search(this.message, this.page);
 
+      if (typeof questions[0] != 'object') {
+      ctx.reply(questions[0]);
+      return;
+    }
+
       for (const question of questions) {
         await ctx.reply(question["title"] as string, ButtonsWithMsg(question.link as string, question["question_id"]));
       }
 
       await ctx.reply("more questions", nextPage());
-      return;
+      return 
     }
 
     const answers = await this.apiStackOverFlow.getAnswers(+cbData);
     for (const answer of answers) {
       await ctx.reply(answer['body_markdown'])
     }
+    return
   }
 }
